@@ -79,22 +79,25 @@ def depthFirstSearch(problem: SearchProblem):
     visited = []
     path = []
 
+    #Empty list which will soon store the path.
     stack.push((problem.getStartState(), []))
 
+    
     while(not stack.isEmpty()):
         coords, path = stack.pop()
 
+        #Return the final path if the last coordinates are the goal.
         if problem.isGoalState(coords):
             return path
 
         if coords not in visited:
             visited.append(coords)
             for i in problem.getSuccessors(coords):
+                #Adds to the end of the list, path the last action.
                 stack.push((i[0], path + [i[1]]))
     return path
 
-   
-
+#Same proccess as as DFS but instead it uses a queue.
 def breadthFirstSearch(problem: SearchProblem):
     from util import Queue
 
@@ -102,6 +105,7 @@ def breadthFirstSearch(problem: SearchProblem):
     visited = []
     path = []
 
+    #Empty list which will soon store the path.
     queue.push((problem.getStartState(), []))
 
     while(not queue.isEmpty()):
@@ -113,9 +117,11 @@ def breadthFirstSearch(problem: SearchProblem):
         if coords not in visited:
             visited.append(coords)
             for i in problem.getSuccessors(coords):
+                #Adds to the end of the list, path the last action.
                 queue.push((i[0], path + [i[1]]))
     return path
 
+#Same proccess as as DFS but instead it uses a priority queue, based on the cost of actions.
 def uniformCostSearch(problem: SearchProblem):
     from util import PriorityQueue
 
@@ -127,6 +133,7 @@ def uniformCostSearch(problem: SearchProblem):
     
 
     while(not pqueue.isEmpty()):
+        #Pops the element with the highest priority.
         coords, path = pqueue.pop()
 
         if problem.isGoalState(coords):
@@ -135,9 +142,12 @@ def uniformCostSearch(problem: SearchProblem):
         if coords not in visited:
             visited.append(coords)
             for i in problem.getSuccessors(coords):
+                #Adds to the end of the list, path the last action, and its priority based on the cost of actions
+                #of the old path + the cost of the successor's cost.
                 pqueue.push((i[0], path + [i[1]]), problem.getCostOfActions(path) + i[2])
     return path
 
+#Trivial heuristic.
 def nullHeuristic(state, problem=None):
     """
     A heuristic function estimates the cost from the current state to the nearest
@@ -145,6 +155,8 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
+#Same proccess as as uniformCostSearch with the priority being cost of actions of the  old path + cost of current successor's +
+# its heuristic value.
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     from util import PriorityQueue
 
@@ -164,6 +176,7 @@ def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
         if coords not in visited:
             visited.append(coords)
             for i in problem.getSuccessors(coords):
+                #New priority: cost of the old path + cost of current successor + its heuristic 
                 pqueue.push((i[0], path + [i[1]]), problem.getCostOfActions(path) + i[2] + heuristic(i[0], problem))
     return path
 

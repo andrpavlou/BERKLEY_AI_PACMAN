@@ -289,12 +289,15 @@ class CornersProblem(search.SearchProblem):
             if not startingGameState.hasFood(*corner):
                 print('Warning: no food in corner ' + str(corner))
         self._expanded = 0 # DO NOT CHANGE; Number of search nodes expanded
-        self.gamestate = startingGameState
+        self.gamestate = startingGameState #STORED THE STARTING STATE.
 
     def getStartState(self):
+        #returns starting position and a list whcih will store the visited corners.
         return(self.startingPosition, [])
 
+
     def isGoalState(self, state: Any):
+        #If the list has length 4 it means it visited all 4 corners.
         if len(state[1]) == 4:
             return True
         return False
@@ -319,10 +322,12 @@ class CornersProblem(search.SearchProblem):
             nextx, nexty = int(x + dx), int(y + dy)
             hitsWall = self.walls[nextx][nexty]
 
-            
+            #if the (nextx, nexty) is not a wall:
             if not hitsWall:
+                #Checks if (nextx, nexty) is a corner and not inserted into the list of visited corners and stores it.
                 if (nextx, nexty) in self.corners and (nextx, nexty) not in state[1]:
                     successors.append((((nextx, nexty), state[1] + [(nextx, nexty)]), action, 1))
+                #Means it is not a corner or a visited corner.
                 else:
                     successors.append((((nextx, nexty), state[1]), action, 1))
 
@@ -350,8 +355,10 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
 
     corners = problem.corners # These are the corner coordinates
     
+    #Iterate through every corner and check if the coordinates are not in the visited corner list.
     for corner in corners:
         if corner not in state[1]:
+            #Calculates the exact distance of the cuurent state to non visited corner and returns it.
             return mazeDistance(state[0], corner, problem.gamestate)
            
 
@@ -422,40 +429,16 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchType = FoodSearchProblem
 
 def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
-    """
-    Your heuristic for the FoodSearchProblem goes here.
 
-    This heuristic must be consistent to ensure correctness.  First, try to come
-    up with an admissible heuristic; almost all admissible heuristics will be
-    consistent as well.
-
-    If using A* ever finds a solution that is worse uniform cost search finds,
-    your heuristic is *not* consistent, and probably not admissible!  On the
-    other hand, inadmissible or inconsistent heuristics may find optimal
-    solutions, so be careful.
-
-    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a Grid
-    (see game.py) of either True or False. You can call foodGrid.asList() to get
-    a list of food coordinates instead.
-
-    If you want access to info like walls, capsules, etc., you can query the
-    problem.  For example, problem.walls gives you a Grid of where the walls
-    are.
-
-    If you want to *store* information to be reused in other calls to the
-    heuristic, there is a dictionary called problem.heuristicInfo that you can
-    use. For example, if you only want to count the walls once and store that
-    value, try: problem.heuristicInfo['wallCount'] = problem.walls.count()
-    Subsequent calls to this heuristic can access
-    problem.heuristicInfo['wallCount']
-    """
     position, foodGrid = state
     "*** YOUR CODE HERE *** "
     distance = 0
     maxdistance = 0
 
+    #iterates through all the food inside the grid, and calculates the exact distance of its current position to every food.
     for target in foodGrid.asList():
         distance = mazeDistance(target, position, problem.gamestate)
+        #Find the maximum distance.
         if maxdistance < distance:
             maxdistance = distance
 
@@ -490,7 +473,7 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        return search.breadthFirstSearch(problem)
+        return search.aStarSearch(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
