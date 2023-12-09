@@ -186,7 +186,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
         if gameState.isWin() or gameState.isLose():
             return 0, self.evaluationFunction(gameState)
         
-
         return best_strat  
         
 
@@ -200,7 +199,54 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        score = self.alphabeta(0, 0, gameState, float('-inf'), float('+inf'))  
+        return score[0]  
+
+    def alphabeta(self, depth, agent, gameState, alpha, beta):
+        
+        if agent == gameState.getNumAgents():
+            agent = 0
+            depth += 1
+
+        if depth == self.depth:
+            return 0, self.evaluationFunction(gameState)
+
+        best_strat = [0, float('-inf')]        #Stores best score and best action
+        
+        for action in gameState.getLegalActions(agent):  
+            # Max (pacman is agent 0)
+            if agent == 0:  
+                next_game_state = gameState.generateSuccessor(agent, action)
+                state = self.alphabeta(depth, agent + 1, next_game_state, alpha, beta)
+
+            if agent == 0 and state[1] > best_strat[1]:                
+                best_strat[0] = action
+                best_strat[1] = state[1]
+            
+            if agent == 0:
+                alpha = max(alpha, state[1])   
+
+            # Min (ghost)
+            if agent != 0:  
+                next_game_state = gameState.generateSuccessor(agent, action)
+                state = self.alphabeta(depth, agent + 1, next_game_state, alpha, beta)
+
+            if agent != 0 and (best_strat[1] == float('-inf') or state[1] < best_strat[1]):
+                best_strat[0] = action
+                best_strat[1] = state[1]
+
+            if agent != 0:
+                beta = min(beta, state[1])
+
+            if alpha > beta:
+                break
+
+        # Leaf node
+        if gameState.isWin() or gameState.isLose():
+            return 0, self.evaluationFunction(gameState)
+        
+        return best_strat  
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
