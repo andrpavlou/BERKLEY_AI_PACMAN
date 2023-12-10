@@ -70,12 +70,7 @@ class ReflexAgent(Agent):
         """
         # Useful information you can extract from a GameState (pacman.py)
         successorGameState = currentGameState.generatePacmanSuccessor(action)
-        newPos = successorGameState.getPacmanPosition()
-        newFood = successorGameState.getFood()
-        newGhostStates = successorGameState.getGhostStates()
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
-
-
+        
         "*** YOUR CODE HERE ***"
         pacman_pos = successorGameState.getPacmanPosition()
         ghost_pos = successorGameState.getGhostPositions()
@@ -261,7 +256,52 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        score = self.expectimax(0, 0, gameState)  
+        return score[0]  
+
+    def expectimax(self, depth, agent, gameState):
+        
+        if agent == gameState.getNumAgents():
+            agent = 0
+            depth += 1
+
+        if depth == self.depth:
+            return 0, self.evaluationFunction(gameState)
+
+        best_strat = [0, float('-inf')]        #Stores best score and best action
+        
+        actions  = gameState.getLegalActions(agent)
+        for action in actions:  
+            # Max (pacman is agent 0)
+            if agent == 0:  
+                next_game_state = gameState.generateSuccessor(agent, action)
+                state = self.expectimax(depth, agent + 1, next_game_state)
+
+            if agent == 0 and state[1] > best_strat[1]:                
+                best_strat[0] = action
+                best_strat[1] = state[1]
+
+            # Min (ghost)
+            if len(actions) != 0:
+                chance = 1 / len(actions)
+
+            if agent != 0:  
+                next_game_state = gameState.generateSuccessor(agent, action)
+                state = self.expectimax(depth, agent + 1, next_game_state)
+
+            if agent != 0 and (best_strat[1] == float('-inf')):
+                best_strat[0] = action
+                best_strat[1] = state[1] * chance
+            elif agent != 0:
+                best_strat[0] == action
+                best_strat[1] += state[1] * chance
+
+        # Leaf node
+        if gameState.isWin() or gameState.isLose():
+            return 0, self.evaluationFunction(gameState)
+        
+        return best_strat  
+        
 
 def betterEvaluationFunction(currentGameState: GameState):
     """
