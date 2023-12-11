@@ -76,17 +76,20 @@ class ReflexAgent(Agent):
         ghost_pos = successorGameState.getGhostPositions()
         ghost_pos = ghost_pos[0]
         
-        min_distance = float('inf')
-        food = currentGameState.getFood()
+        min_distance = float('inf') #Stores the minimum distance between ghost/pacman (manhattan distance).
+        food = currentGameState.getFood() #Current food grid. (True when there is food in a certain position)
 
+        #Find minimum distance between pacman and food dots.
         for foodcoords in food.asList():
             distance =  (manhattanDistance(foodcoords, pacman_pos))
             if distance < min_distance:
                 min_distance = distance
-
-            death_distance = manhattanDistance(ghost_pos, pacman_pos)
-            if death_distance == 0:
-                return float('-inf')
+        
+        #Distance between ghost/pacman (manhattan distance).
+        death_distance = manhattanDistance(ghost_pos, pacman_pos)
+        #If manhattan distance is zero it means it is a lose state, so return -inf.
+        if death_distance == 0:
+            return float('-inf')
 
         return -min_distance
 
@@ -118,7 +121,7 @@ class MultiAgentSearchAgent(Agent):
     """
 
     def __init__(self, evalFn = 'scoreEvaluationFunction', depth = '2'):
-        self.index = 0 # Pacman is always agent index 0
+        self.index = 0 #Pacman is always agent index 0.
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 class MinimaxAgent(MultiAgentSearchAgent):
@@ -147,39 +150,46 @@ class MinimaxAgent(MultiAgentSearchAgent):
         score = self.minimax(0, 0, gameState)  
         return score[0]  
 
+    #Minimax function taking into consideration the depth/agent/gamestate (agent zero is pacman, else ghosts).
     def minimax(self, depth, agent, gameState):
-        
+
+        #Means iterated all agents so increase depth, and go back to agent 0.
         if agent == gameState.getNumAgents():
             agent = 0
             depth += 1
 
+        #Leaf node, so return its value. 
         if depth == self.depth:
-            return 0, self.evaluationFunction(gameState)
+            return 0, scoreEvaluationFunction(gameState)
 
-        best_strat = [0, float('-inf')]        #Stores best score and best action
+        best_strat = [0, float('-inf')] #Stores best score and best move.
         
+        #Iterate through all the legal actions of the current agent.
         for action in gameState.getLegalActions(agent):  
-            # Max (pacman is agent 0)
+            #Pacman (max).
             if agent == 0:  
+                #Find next state, call recursively minimax, for next agent until leaf node. 
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.minimax(depth, agent + 1, next_game_state)
 
+            #Find the highest scores, and save the action that caused it.
             if agent == 0 and state[1] > best_strat[1]:                
                 best_strat[0] = action
                 best_strat[1] = state[1]
 
-            # Min (ghost)
+            #Ghosts (min).
             if agent != 0:  
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.minimax(depth, agent + 1, next_game_state)
 
+            #Find the lowest scores, and save the action that caused it or if the best score is unchaned for initilization just save it.
             if agent != 0 and (best_strat[1] == float('-inf') or state[1] < best_strat[1]):
                 best_strat[0] = action
                 best_strat[1] = state[1]
 
-        # Leaf node
+        #Return the score if pacman loses or wins.
         if gameState.isWin() or gameState.isLose():
-            return 0, self.evaluationFunction(gameState)
+            return 0, scoreEvaluationFunction(gameState)
         
         return best_strat  
         
@@ -197,31 +207,41 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         score = self.alphabeta(0, 0, gameState, float('-inf'), float('+inf'))  
         return score[0]  
 
+    #Same as minimax with addition of alpha, beta variables.
     def alphabeta(self, depth, agent, gameState, alpha, beta):
         
+        #Means iterated all agents so increase depth, and go back to agent 0.
         if agent == gameState.getNumAgents():
             agent = 0
             depth += 1
 
+        #Leaf node, so return its value. 
         if depth == self.depth:
-            return 0, self.evaluationFunction(gameState)
+            return 0, scoreEvaluationFunction(gameState)
 
-        best_strat = [0, float('-inf')]        #Stores best score and best action
+        best_strat = [0, float('-inf')] #Stores best score and best action.
         
         for action in gameState.getLegalActions(agent):  
-            # Max (pacman is agent 0)
+            #Alphabeta algorithm's prune idea. If alpha is greater than beta just prune the tree by stopping.
+            if alpha > beta:
+                break
+
+            #Pacman.
             if agent == 0:  
+                #Find next state, call recursively minimax, for next agent until leaf node. 
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.alphabeta(depth, agent + 1, next_game_state, alpha, beta)
 
+            #Find the highest scores, and save the action that caused it.
             if agent == 0 and state[1] > best_strat[1]:                
                 best_strat[0] = action
                 best_strat[1] = state[1]
             
+            #Save the max value between alpha and current score (state[1]).
             if agent == 0:
                 alpha = max(alpha, state[1])   
 
-            # Min (ghost)
+            # Ghost.
             if agent != 0:  
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.alphabeta(depth, agent + 1, next_game_state, alpha, beta)
@@ -230,15 +250,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 best_strat[0] = action
                 best_strat[1] = state[1]
 
+            #Save the min value between beta and current score (state[1]).
             if agent != 0:
                 beta = min(beta, state[1])
 
-            if alpha > beta:
-                break
-
-        # Leaf node
+        #Return the score if pacman loses or wins.
         if gameState.isWin() or gameState.isLose():
-            return 0, self.evaluationFunction(gameState)
+            return 0, scoreEvaluationFunction(gameState)
         
         return best_strat  
 
@@ -258,30 +276,33 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
         score = self.expectimax(0, 0, gameState)  
         return score[0]  
-
+    
+    #Same as minimax with taking into consideration the probabilities needed for min.
     def expectimax(self, depth, agent, gameState):
-        
+        #Means iterated all agents so increase depth, and go back to agent 0.
         if agent == gameState.getNumAgents():
             agent = 0
             depth += 1
 
+        #Leaf node, so return its value. 
         if depth == self.depth:
             return 0, self.evaluationFunction(gameState)
 
-        best_strat = [0, float('-inf')]        #Stores best score and best action
+        best_strat = [0, float('-inf')] #Stores best score and best action.
         
         actions  = gameState.getLegalActions(agent)
         for action in actions:  
-            # Max (pacman is agent 0)
+            #Pacman (max).
             if agent == 0:  
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.expectimax(depth, agent + 1, next_game_state)
 
+            #same as minimax, for max.
             if agent == 0 and state[1] > best_strat[1]:                
                 best_strat[0] = action
                 best_strat[1] = state[1]
 
-            # Min (ghost)
+            #Calculate the probilities, considering how many actions are there for the agent.
             if len(actions) != 0:
                 chance = 1 / len(actions)
 
@@ -289,14 +310,16 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.expectimax(depth, agent + 1, next_game_state)
 
+            #For ghosts if it is the first value it needs to be just stored, multiplied with its probability.
             if agent != 0 and (best_strat[1] == float('-inf')):
                 best_strat[0] = action
                 best_strat[1] = state[1] * chance
+            #Otherwise there are already values for ghosts so add them with old ones multiplied with the probability.
             elif agent != 0:
                 best_strat[0] == action
                 best_strat[1] += state[1] * chance
 
-        # Leaf node
+        #Return the score if pacman loses or wins.
         if gameState.isWin() or gameState.isLose():
             return 0, self.evaluationFunction(gameState)
         
@@ -312,39 +335,51 @@ def betterEvaluationFunction(currentGameState: GameState):
     """
         
     "*** YOUR CODE HERE ***"
+    #Similar idea with Q1, but with current state and some additions.
     pacman_pos = currentGameState.getPacmanPosition()
-    ghost_pos = currentGameState.getGhostPositions()
     scared_time = currentGameState.getGhostStates()[0].scaredTimer
+    ghost_pos = currentGameState.getGhostPositions()
     ghost_pos = ghost_pos[0]
     
     min_distance = float('inf')
     food = currentGameState.getFood()
 
+    #Find minimum manhattan distance between all food dots and pacman.
     for foodcoords in food.asList():
         distance =  (manhattanDistance(foodcoords, pacman_pos))
         if distance < min_distance:
             min_distance = distance
 
+    #Manhattan distance between current pacman position and ghost.
     death_distance = manhattanDistance(ghost_pos, pacman_pos)
-
+    
+    #Returns -inf if, the death distance is zero which means it is a lose state.
     if death_distance == 0:
         return float('-inf')
     
     move = 0
     scared_pen = 0
 
+    #If minimum MD between pacman and food is less than MD between pacman 
+    #and ghost, or the pacman consumed capsules and ghosts are scared,
+    #pacman can keep moving.
     if death_distance > min_distance  or scared_time > 0:
         move = 100
+    #Otherwise receive a penalty because ghost is close.
     else:
         move = -100
 
+    #Ghost are scared, so add an aditional boost to move around. No need to check for dividing with zero
+    #because of former edge case.
     if scared_time > 0:
-        scared_pen = -3 / death_distance
+        scared_pen = 3 / death_distance #(3 can be changed to other numbers as well, but 3 works better).
 
+    #Return inf if it is a win state.
     if currentGameState.isWin():
         return float('inf')
-
-    return currentGameState.getScore() - min_distance + move - scared_pen
+    
+    #Taking into consideration the score of current game state with the addition of the extra calculated variables.
+    return currentGameState.getScore() - min_distance + move + scared_pen
 
 # Abbreviation
 better = betterEvaluationFunction
