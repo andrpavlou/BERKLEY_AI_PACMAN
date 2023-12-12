@@ -28,9 +28,6 @@ class ReflexAgent(Agent):
     it in any way you see fit, so long as you don't touch our method
     headers.
     """
-
-
-
     def getAction(self, gameState: GameState):
         """
         You do not need to change this method, but you're welcome to.
@@ -91,7 +88,7 @@ class ReflexAgent(Agent):
         if death_distance == 0:
             return float('-inf')
 
-        return -min_distance
+        return successorGameState.getScore() - min_distance
 
 
 
@@ -130,22 +127,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState):
-        """
-          Returns the minimax action from the current gameState using self.depth
-          and self.evaluationFunction.
-
-          Here are some method calls that might be useful when implementing minimax.
-
-          gameState.getLegalActions(agentIndex):
-            Returns a list of legal actions for an agent
-            agentIndex=0 means Pacman, ghosts are >= 1
-
-          gameState.generateSuccessor(agentIndex, action):
-            Returns the successor game state after an agent takes an action
-
-          gameState.getNumAgents():
-            Returns the total number of agents in the game
-        """
         "*** YOUR CODE HERE ***"
         score = self.minimax(0, 0, gameState)  
         return score[0]  
@@ -200,9 +181,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState: GameState):
-        """
-        Returns the minimax action using self.depth and self.evaluationFunction
-        """
         "*** YOUR CODE HERE ***"
         score = self.alphabeta(0, 0, gameState, float('-inf'), float('+inf'))  
         return score[0]  
@@ -231,28 +209,25 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 #Find next state, call recursively minimax, for next agent until leaf node. 
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.alphabeta(depth, agent + 1, next_game_state, alpha, beta)
+                alpha = max(alpha, state[1]) #Save the max value between alpha and current score (state[1]).
+
 
             #Find the highest scores, and save the action that caused it.
             if agent == 0 and state[1] > best_strat[1]:                
                 best_strat[0] = action
                 best_strat[1] = state[1]
-            
-            #Save the max value between alpha and current score (state[1]).
-            if agent == 0:
-                alpha = max(alpha, state[1])   
 
             # Ghost.
             if agent != 0:  
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.alphabeta(depth, agent + 1, next_game_state, alpha, beta)
+                beta = min(beta, state[1]) #Save the min value between beta and current score (state[1]).
+
 
             if agent != 0 and (best_strat[1] == float('-inf') or state[1] < best_strat[1]):
                 best_strat[0] = action
                 best_strat[1] = state[1]
 
-            #Save the min value between beta and current score (state[1]).
-            if agent != 0:
-                beta = min(beta, state[1])
 
         #Return the score if pacman loses or wins.
         if gameState.isWin() or gameState.isLose():
@@ -267,12 +242,6 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState: GameState):
-        """
-        Returns the expectimax action using self.depth and self.evaluationFunction
-
-        All ghosts should be modeled as choosing uniformly at random from their
-        legal moves.
-        """
         "*** YOUR CODE HERE ***"
         score = self.expectimax(0, 0, gameState)  
         return score[0]  
@@ -288,7 +257,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         if depth == self.depth:
             return 0, self.evaluationFunction(gameState)
 
-        best_strat = [0, float('-inf')] #Stores best score and best action.
+        best_strat = [0, 0] #Stores best score and best action.
         
         actions  = gameState.getLegalActions(agent)
         for action in actions:  
@@ -306,18 +275,14 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             if len(actions) != 0:
                 chance = 1 / len(actions)
 
+            #For ghosts the value that needs to be stored is the addition of old best value with 
+            #the current value, multiplied with its probability.
             if agent != 0:  
                 next_game_state = gameState.generateSuccessor(agent, action)
                 state = self.expectimax(depth, agent + 1, next_game_state)
-
-            #For ghosts if it is the first value it needs to be just stored, multiplied with its probability.
-            if agent != 0 and (best_strat[1] == float('-inf')):
                 best_strat[0] = action
-                best_strat[1] = state[1] * chance
-            #Otherwise there are already values for ghosts so add them with old ones multiplied with the probability.
-            elif agent != 0:
-                best_strat[0] == action
                 best_strat[1] += state[1] * chance
+
 
         #Return the score if pacman loses or wins.
         if gameState.isWin() or gameState.isLose():
@@ -330,8 +295,6 @@ def betterEvaluationFunction(currentGameState: GameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
-
-    DESCRIPTION: <write something here so we know what you did>
     """
         
     "*** YOUR CODE HERE ***"
@@ -356,9 +319,12 @@ def betterEvaluationFunction(currentGameState: GameState):
     #Returns -inf if, the death distance is zero which means it is a lose state.
     if death_distance == 0:
         return float('-inf')
+    #Return inf, if it is a win state.
+    if currentGameState.isWin():
+        return float('inf')
     
     move = 0
-    scared_pen = 0
+    scared_boost = 0
 
     #If minimum MD between pacman and food is less than MD between pacman 
     #and ghost, or the pacman consumed capsules and ghosts are scared,
@@ -368,18 +334,14 @@ def betterEvaluationFunction(currentGameState: GameState):
     #Otherwise receive a penalty because ghost is close.
     else:
         move = -100
-
+    
     #Ghost are scared, so add an aditional boost to move around. No need to check for dividing with zero
     #because of former edge case.
     if scared_time > 0:
-        scared_pen = 3 / death_distance #(3 can be changed to other numbers as well, but 3 works better).
+        scared_boost = 3 / death_distance #(3 can be changed to other numbers as well, but 3 works better).   
 
-    #Return inf if it is a win state.
-    if currentGameState.isWin():
-        return float('inf')
-    
     #Taking into consideration the score of current game state with the addition of the extra calculated variables.
-    return currentGameState.getScore() - min_distance + move + scared_pen
+    return currentGameState.getScore() - min_distance + move + scared_boost
 
 # Abbreviation
 better = betterEvaluationFunction
