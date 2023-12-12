@@ -88,6 +88,8 @@ class ReflexAgent(Agent):
         if death_distance == 0:
             return float('-inf')
 
+        #Returns score - min_distance which make the value returned >= (score - any distance)
+        #which gives priority to the closest food
         return successorGameState.getScore() - min_distance
 
 
